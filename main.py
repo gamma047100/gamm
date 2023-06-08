@@ -6,6 +6,7 @@ from loguru import logger
 import random
 import time
 from tqdm import tqdm
+from moralis import evm_api
 from config import *
 from eth_abi import *
 from eth_utils import *
@@ -30,7 +31,7 @@ gas_holo = {'bsc':4500000000,
 wallets = []
 results = []
 class Bridger:
-    def __init__(self, privatekey,chain,to,delay,mode=1):
+    def __init__(self, privatekey,chain,to,delay,api,mode=1):
         self.privatekey = privatekey
         self.chain = chain
         self.to = to
@@ -40,6 +41,7 @@ class Bridger:
         self.address = self.account.address
         self.mode = mode
         self.delay = delay
+        self.moralisapi = api
         self.HolographBridgeAddress = Web3.to_checksum_address('0xD85b5E176A30EdD1915D6728FaeBD25669b60d8b')
         self.LzEndAddress = Web3.to_checksum_address('0x3c2269811836af69497E5F486A85D7316753cf62')
         self.GleamAddress = Web3.to_checksum_address('0x4803E859A2e325dc8F6AdcD23Ea682e323F59640')
@@ -64,30 +66,52 @@ class Bridger:
 
     def check_nft(self):
         if self.mode == 0:
-            gleam = self.w3.eth.contract(address=self.GleamAddress, abi=gleam_abi)
-            balance = gleam.functions.balanceOf(self.address).call()
-            if balance == 1:
-                number = gleam.functions.tokensOfOwner(self.address).call()[0]
-                return number
+            api_key = self.moralisapi
+            params = {
+                "chain": self.chain,
+                "format": "decimal",
+                "token_addresses": [
+                    self.GleamAddress
+                ],
+                "media_items": False,
+                "address": self.address}
+            try:
+                result = evm_api.nft.get_wallet_nfts(api_key=api_key, params=params)
+                id_ = int(result['result'][0]['token_id'])
+                if id_:
+                    logger.success(f'{self.address} - Gleam {id_} nft founded on {self.chain}...')
+                    return id_
+            except Exception as e:
+                pass
 
         elif self.mode == 1:
-            for chain in ['avax', 'polygon', 'bsc']:
-                self.w3 = Web3(Web3.HTTPProvider(info[chain][1]))
-                gleam = self.w3.eth.contract(address=self.GleamAddress, abi=gleam_abi)
-                balance = gleam.functions.balanceOf(self.address).call()
-                if balance == 1:
-                    number = gleam.functions.tokensOfOwner(self.address).call()[0]
-                    logger.success(f'{self.address} - Gleam {number} nft founded on {chain}...')
-                    return chain, number
+            for chain in ['avalanche', 'polygon', 'bsc']:
 
+                    api_key = self.moralisapi
+                    params = {
+                        "chain": chain,
+                        "format": "decimal",
+                        "token_addresses": [
+                            self.GleamAddress
+                        ],
+                        "media_items": False,
+                        "address": self.address}
+                    try:
+                        result = evm_api.nft.get_wallet_nfts(api_key=api_key, params=params)
+                        id_ = int(result['result'][0]['token_id'])
+                        if id_:
+                            logger.success(f'{self.address} - Gleam {id_} nft founded on {chain}...')
+                            if chain == 'avalanche': chain = 'avax'
+                            return chain, id_
+
+                    except Exception as e:
+                        pass
 
             logger.error(f'{self.address} - Gleam nft not in wallet...')
             return False
 
-
     def start(self):
         if self.mode == 0:
-            self.check_nft()
             nft_id = self.check_nft()
         elif self.mode == 1:
             data = self.check_nft()
@@ -139,10 +163,12 @@ class Bridger:
 
 def main():
     logger.info(f'{" "*32}автор - https://t.me/iliocka{" "*32}')
+
+    api = ''   #https://admin.moralis.io/settings#secret-keys
     with open("keys.txt", "r") as f:
         keys = [row.strip() for row in f]
     for key in keys:
-        holo = Bridger(key,chain,to,delay,mode)
+        holo = Bridger(key,chain,to,delay,api,mode)
         res = holo.start()
         wallets.append(res[0]), results.append(res[1])
     res = {'address': wallets, 'result': results}
