@@ -119,6 +119,10 @@ class Bridger:
                 chain,nft_id = self.check_nft()
                 self.chain = chain
                 self.w3 = Web3(Web3.HTTPProvider(info[self.chain][1]))
+                if chain == self.to:
+                    chains = ['avax', 'polygon', 'bsc']
+                    chains.remove(self.to)
+                    self.to = random.choice(chains)
             else:
                 return self.address,'Gleam nft not in wallet'
 
