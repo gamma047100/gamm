@@ -10,6 +10,9 @@
 
 * Приватные кошельки пишем в keys.txt - один ключ на одной строке </br>
 
+* Необходим апи ключ моралис - https://admin.moralis.io/settings#secret-keys
+ </br>
+
 * Также не забудьте установить зависимости 
 
 <pre><code>$ pip install -r req.txt</code></pre>
