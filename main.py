@@ -82,7 +82,7 @@ class Bridger:
                     logger.success(f'{self.address} - Gleam {id_} nft founded on {self.chain}...')
                     return id_
             except Exception as e:
-                pass
+                return False
 
         elif self.mode == 1:
             for chain in ['avalanche', 'polygon', 'bsc']:
@@ -105,14 +105,19 @@ class Bridger:
                             return chain, id_
 
                     except Exception as e:
-                        pass
+                        return False
 
             logger.error(f'{self.address} - Gleam nft not in wallet...')
             return False
 
     def start(self):
         if self.mode == 0:
-            nft_id = self.check_nft()
+            data = self.check_nft()
+            if data:
+                nft_id = data
+            else:
+                return self.address,'Gleam nft not in wallet'
+
         elif self.mode == 1:
             data = self.check_nft()
             if data:
