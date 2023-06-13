@@ -105,7 +105,8 @@ class Bridger:
                             return chain, id_
 
                     except Exception as e:
-                        return False
+                        if 'list index out of range' in str(e):
+                            continue
 
             logger.error(f'{self.address} - Gleam nft not in wallet...')
             return False
